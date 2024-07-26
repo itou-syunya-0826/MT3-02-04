@@ -48,6 +48,10 @@ public:
 		float distance;// 距離
 	};
 
+	struct Triangle {
+		Vector3 vertices[3];
+	};
+
 public:
 
 	Matrix();
@@ -211,8 +215,6 @@ public:
 	/// <returns></returns>
 	static Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth);
 
-
-
 	/// <summary>
 	/// 1.クロス式
 	/// </summary>
@@ -220,8 +222,6 @@ public:
 	/// <param name="v2"></param>
 	/// <returns></returns>
 	static Vector3 Cross(const Vector3& v1, const Vector3& v2);
-
-
 
 	/// <summary>
 	/// グリッド線の表示
@@ -257,6 +257,8 @@ public:
 	/// <returns></returns>
 	static float Length(const Vector3& vec);
 
+	static Vector3 Normalize(const Vector3& v);
+
 	/// <summary>
 	/// 球と球の衝突判定
 	/// </summary>
@@ -282,13 +284,21 @@ public:
 	static bool IsCollision(const Segment& segment, const Plane& plane);
 
 	/// <summary>
+	/// 三角形と線の衝突判定
+	/// </summary>
+	/// <param name="segment"></param>
+	/// <param name="plane"></param>
+	/// <returns></returns>
+	static bool IsCollision(const Segment& segment, const Triangle& triangle);
+
+	/// <summary>
 	/// 垂直ベクトルの生成
 	/// </summary>
 	/// <param name="vector"></param>
 	/// <returns></returns>
 	static Vector3 Perpendicular(const Vector3& vector);
 
-	static Vector3 Normalize(const Vector3& v);
+	
 
 	/// <summary>
 	/// 平面の描画
@@ -299,5 +309,6 @@ public:
 	/// <param name="color"></param>
 	static void DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color);
 
+	static void DrawTriangle(const Triangle& triangle, const Matrix4x4& viewProjection, const Matrix4x4& viewportMatrix, uint32_t color);
 };
 

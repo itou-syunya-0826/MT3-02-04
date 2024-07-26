@@ -353,7 +353,7 @@ Matrix4x4 Matrix::MakeRotateXYZMatrix(Vector3 radian)
 
 Matrix4x4 Matrix::MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate)
 {
-	return Multiply(Multiply(MakeScaleMatrix(scale), MakeRotateXYZMatrix(rotate)), MakeTranslateMatrix(translate));
+	return Multiply(Multiply(MakeScaleMatrix(scale),MakeTranslateMatrix(translate)),MakeRotateXYZMatrix(rotate));
 }
 
 float Matrix::Cot(float theta) {
@@ -522,6 +522,15 @@ float Matrix::Length(const Vector3& vec) {
 }
 
 
+Vector3 Matrix::Normalize(const Vector3& v)
+{
+	float length = Length(v);
+	if (length == 0.0f) {
+		return v; // ゼロベクトルの場合はそのまま返す
+	}
+	return { v.x / length, v.y / length, v.z / length };
+}
+
 bool Matrix::IsCollision(const Sphere& s1, const Sphere& s2) {
 	// 2つの球の中心点間の距離を求める
 	Vector3 diff = { s2.center.x - s1.center.x, s2.center.y - s1.center.y, s2.center.z - s1.center.z };
@@ -566,6 +575,41 @@ bool Matrix::IsCollision(const Segment& segment, const Plane& plane)
 	return false;
 }
 
+bool Matrix::IsCollision(const Segment& segment, const Triangle& triangle)
+{
+	Vector3 v01 = Subtract(triangle.vertices[1], triangle.vertices[0]);
+	Vector3 v12 = Subtract(triangle.vertices[2], triangle.vertices[1]);
+	Vector3 normal = Normalize(Cross(v01, v12));
+	Plane plane{ .normal = normal,.distance = Dot(triangle.vertices[0],normal) };
+	float dot = Dot(plane.normal, segment.diff);
+	if (dot == 0.0f) {
+		return false;
+	}
+	float t = (plane.distance - Dot(segment.origin, plane.normal)) / dot;
+	// ?
+	if ((t < 0.0f) || (1.0f < t)) {
+		return false;
+	}
+
+	Vector3 intersect = Add(segment.origin, Multiply(t, segment.diff));
+	Vector3 v1p = Subtract(intersect, triangle.vertices[1]);
+	if (Dot(Cross(v01, v1p), normal) < 0.0f) {
+		return false;
+	}
+	Vector3 v2p = Subtract(intersect, triangle.vertices[2]);
+	if (Dot(Cross(v12, v2p), normal) < 0.0f) {
+		return false;
+	}
+
+	Vector3 v0p = Subtract(intersect, triangle.vertices[0]);
+	Vector3 v20 = Subtract(triangle.vertices[0], triangle.vertices[2]);
+	if (Dot(Cross(v20, v0p), normal) < 0.0f) {
+		return false;
+	}
+
+	return true;
+}
+
 Vector3 Matrix::Perpendicular(const Vector3& vector) {
 	if (vector.x != 0.0f || vector.y != 0.0f) {
 		return { -vector.y,vector.x,0.0f };
@@ -573,14 +617,7 @@ Vector3 Matrix::Perpendicular(const Vector3& vector) {
 	return { 0.0f,-vector.z,vector.y };
 }
 
-Vector3 Matrix::Normalize(const Vector3& v)
-{
-	float length = Length(v);
-	if (length == 0.0f) {
-		return v; // ゼロベクトルの場合はそのまま返す
-	}
-	return { v.x / length, v.y / length, v.z / length };
-}
+
 
 void Matrix::DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
 
@@ -606,6 +643,22 @@ void Matrix::DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix
 	Novice::DrawLine((int)points[0].x, (int)points[0].y, (int)points[3].x, (int)points[3].y, color);
 	Novice::DrawLine((int)points[1].x, (int)points[1].y, (int)points[3].x, (int)points[3].y, color);
 	
+}
+
+void Matrix::DrawTriangle(const Triangle& triangle, const Matrix4x4& viewProjection, const Matrix4x4& viewportMatrix, uint32_t color)
+{
+	Vector3 screenVertices[3] = {
+		Transform(Transform(triangle.vertices[0],viewProjection),viewportMatrix),
+		Transform(Transform(triangle.vertices[1],viewProjection),viewportMatrix),
+		Transform(Transform(triangle.vertices[2],viewProjection),viewportMatrix)
+	};
+
+	Novice::DrawTriangle(
+		int(screenVertices[0].x), int(screenVertices[0].y), int(screenVertices[1].x),
+		int(screenVertices[1].y), int(screenVertices[2].x), int(screenVertices[2].y),
+		color, kFillModeWireFrame
+	);
+
 }
 
 
